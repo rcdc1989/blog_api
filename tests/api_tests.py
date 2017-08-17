@@ -147,6 +147,88 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
         data = json.loads(response.data.decode("ascii"))
         self.assertEqual(data["message"], "Could not find post with id 1")
+        
+    def test_get_posts_with_title(self):
+        """ Filtering posts by title """
+        postA = models.Post(title="Post with bells", body="Just a test")
+        postB = models.Post(title="Post with whistles", body="Still a test")
+        postC = models.Post(title="Post with bells and whistles",
+                            body="Another test")
+
+        session.add_all([postA, postB, postC])
+        session.commit()
+
+        response = self.client.get("/api/posts?title_like=whistles",
+            headers=[("Accept", "application/json")]
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.mimetype, "application/json")
+
+        posts = json.loads(response.data.decode("ascii"))
+        self.assertEqual(len(posts), 2)
+
+        post = posts[0]
+        self.assertEqual(post["title"], "Post with whistles")
+        self.assertEqual(post["body"], "Still a test")
+
+        post = posts[1]
+        self.assertEqual(post["title"], "Post with bells and whistles")
+        self.assertEqual(post["body"], "Another test")
+    
+    def test_get_posts_with_content(self):
+        """ Filtering posts by content text """
+        #create test data
+        postA = models.Post(title="Post with bells", body="hat hat hat")
+        postB = models.Post(title="Post with whistles", body="cat cat cat")
+        postC = models.Post(title="Post with bells and whistles",
+                            body="hat cat hat cat")
+
+        session.add_all([postA, postB, postC])
+        session.commit()
+
+        response = self.client.get("/api/posts?content_like=hat",
+            headers=[("Accept", "application/json")]
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.mimetype, "application/json")
+
+        posts = json.loads(response.data.decode("ascii"))
+        self.assertEqual(len(posts), 2)
+
+        post = posts[0]
+        self.assertEqual(post["title"], "Post with bells")
+        self.assertEqual(post["body"], "hat hat hat")
+
+        post = posts[1]
+        self.assertEqual(post["title"], "Post with bells and whistles")
+        self.assertEqual(post["body"], "hat cat hat cat")
+        
+    def test_get_posts_with_content_and_title(self):
+        """ Filtering posts by content text  and title"""
+        #create test data
+        postA = models.Post(title="Post with bells", body="hat hat hat")
+        postB = models.Post(title="Post with whistles", body="cat cat cat")
+        postC = models.Post(title="Post with bells and whistles",
+                            body="hat cat hat cat")
+
+        session.add_all([postA, postB, postC])
+        session.commit()
+
+        response = self.client.get("/api/posts?content_like=hat&title_like=whistles",
+            headers=[("Accept", "application/json")]
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.mimetype, "application/json")
+
+        posts = json.loads(response.data.decode("ascii"))
+        self.assertEqual(len(posts), 1)
+
+        post = posts[0]
+        self.assertEqual(post["title"], "Post with bells and whistles")
+        self.assertEqual(post["body"], "hat cat hat cat")
     
 if __name__ == "__main__":
     unittest.main()
