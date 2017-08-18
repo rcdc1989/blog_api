@@ -101,3 +101,32 @@ def posts_post():
     headers = {"Location": url_for("post_get", id=post.id)}
     return Response(data, 201, headers=headers,
                     mimetype="application/json")
+                    
+                    
+                    
+@app.route("/api/posts/<int:id>", methods=["PUT"])
+@decorators.accept("application/json")
+@decorators.require("application/json")
+def post_put(id):
+    """ Edit an existing post """
+    data = request.json
+    
+    try:
+        validate(data, post_schema)
+    except ValidationError as error:
+        data = {"message": error.message}
+        return Response(json.dumps(data), 422, mimetype="application/json")
+
+    # Add the post to the database
+    post = session.query(models.Post).get(id)
+    post.body = data["body"]
+    post.title = data["title"]
+    session.add(post)
+    session.commit()
+
+    # Return a 202 Accepted, containing the post as JSON and with the
+    # Location header set to the location of the post
+    data = json.dumps(post.as_dictionary())
+    headers = {"Location": url_for("post_get", id=post.id)}
+    return Response(data, 202, headers=headers,
+                    mimetype="application/json")

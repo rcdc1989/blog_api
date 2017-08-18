@@ -309,6 +309,49 @@ class TestAPI(unittest.TestCase):
 
         data = json.loads(response.data.decode("ascii"))
         self.assertEqual(data["message"], "'body' is a required property")
+        
+    def test_edit_post(self):
+        """ Editing an existing post """
+        #start by creating a post to edit and verifying that it worked
+        postB = models.Post(title="Example Post B", body="Still a test")
+
+        session.add(postB)
+        session.commit()
+
+        response = self.client.get("/api/posts/{}".format(postB.id),
+                                    headers=[("Accept", "application/json")]
+                                    )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.mimetype, "application/json")
+
+        post = json.loads(response.data.decode("ascii"))
+        self.assertEqual(post["title"], "Example Post B")
+        self.assertEqual(post["body"], "Still a test")
+        
+        #here we use code 202: accepted by server
+        data = {
+            "title": "Modified Test",
+            "body": "Modified Content"
+        }
+
+        response = self.client.put("/api/posts/{}".format(postB.id),
+            data=json.dumps(data),
+            content_type="application/json",
+            headers=[("Accept", "application/json")]
+        )
+    
+        data = json.loads(response.data.decode("ascii"))
+        self.assertEqual(data["id"], 1)
+        self.assertEqual(data["title"], "Modified Test")
+        self.assertEqual(data["body"], "Modified Content")
+
+        posts = session.query(models.Post).all()
+        self.assertEqual(len(posts), 1)
+
+        post = posts[0]
+        self.assertEqual(post.title, "Modified Test")
+        self.assertEqual(post.body, "Modified Content")
     
 if __name__ == "__main__":
     unittest.main()
