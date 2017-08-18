@@ -8,6 +8,17 @@ from . import decorators
 from posts import app
 from .database import session
 
+
+# JSON Schema describing the structure of a post
+post_schema = {
+    "properties": {
+        "title" : {"type" : "string"},
+        "body": {"type": "string"}
+    },
+    "required": ["title", "body"]
+}
+
+
 @app.route("/api/posts", methods=["GET"])
 @decorators.accept("application/json")
 def posts_get():
@@ -72,6 +83,12 @@ def post_delete(id):
 def posts_post():
     """ Add a new post """
     data = request.json
+    
+    try:
+        validate(data, post_schema)
+    except ValidationError as error:
+        data = {"message": error.message}
+        return Response(json.dumps(data), 422, mimetype="application/json")
 
     # Add the post to the database
     post = models.Post(title=data["title"], body=data["body"])
